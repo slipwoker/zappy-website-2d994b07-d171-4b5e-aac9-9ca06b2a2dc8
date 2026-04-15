@@ -1,0 +1,79 @@
+# Business — Generative Engine Optimization Map
+
+---
+
+## Pages
+
+### בית
+https://example.com
+ברוכים הבאים ל-Yarden mall! חנות הסקוושים והסליימים המובילה בישראל לילדים ובני נוער. מוצרים צבעוניים, מגניבים וכיפיים שיגרמו לכם לחייך. קנו עכשיו!
+
+### הסיפור שלנו
+https://example.com/brand
+Yarden mall נולדה מאהבה לצבעים, כיף ויצירתיות! גלו מי אנחנו, מה מניע אותנו ולמה אלפי ילדים ובני נוער בוחרים בנו לסקוושים וסליימים הכי טרנדיים בישראל.
+
+### ביקורות
+https://example.com/reviews
+אלפי לקוחות מרוצים כבר גילו את הקסם של Yarden mall! קראו ביקורות אמיתיות מילדים ובני נוער על הסקוושים והסליימים שלנו והצטרפו למשפחה המגניבה שלנו.
+
+### צור קשר
+https://example.com/contact
+יש לכם שאלה על סקוושים, סליימים או הזמנה? יצירת קשר עם צוות Yarden mall היא קלה ומהירה! נשמח לעזור לכם למצוא את המוצר המושלם. פנו אלינו עכשיו.
+
+### Products
+https://example.com/products
+המוצרים שלנו - Yarden mall
+
+### Cart
+https://example.com/cart
+עגלת הקניות שלך
+
+### Checkout
+https://example.com/checkout
+תשלום
+
+### Login
+https://example.com/login
+התחברות לקוחות
+
+### Account
+https://example.com/account
+החשבון שלי
+
+### Order Success
+https://example.com/order-success
+תודה על ההזמנה
+
+### Product Detail
+https://example.com/product/:slug
+פרטי המוצר - Yarden mall
+
+### Category
+https://example.com/category/:slug
+מוצרים - Yarden mall
+
+## Legal & Policy
+
+### Privacy Policy
+https://example.com/privacy
+Information about how user data is collected, stored, and protected.
+
+### Terms & Conditions
+https://example.com/terms
+Legal terms describing service usage, rights, and policies.
+
+### Accessibility Statement
+https://example.com/accessibility
+Information about WCAG compliance and accessibility features.
+
+---
+
+# Business Context (for LLM understanding)
+
+## About Business
+---
+
+# Additional Resources
+
+- **Sitemap**: https://example.com/sitemap.xml
+- **Robots.txt**: https://example.com/robots.txt
