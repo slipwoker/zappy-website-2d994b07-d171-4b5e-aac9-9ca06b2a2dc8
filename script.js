@@ -1,35 +1,31 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-  // ============================================================
-  // 1. SMOOTH SCROLL FOR ANCHOR LINKS
-  // ============================================================
-  document.addEventListener('click', function (e) {
-    const target = e.target.closest('a[href^="#"]');
-    if (!target) return;
+  // ─── 1. Smooth Scroll for Anchor Links ───────────────────────────────────────
+  document.body.addEventListener('click', function (e) {
+    const anchor = e.target.closest('a[href^="#"]');
+    if (!anchor) return;
 
-    const href = target.getAttribute('href');
-    if (!href || href === '#') return;
+    const targetId = anchor.getAttribute('href');
+    if (!targetId || targetId === '#') return;
 
-    const destination = document.querySelector(href);
-    if (!destination) return;
+    const targetEl = document.querySelector(targetId);
+    if (!targetEl) return;
 
     e.preventDefault();
 
-    const navbarEl = document.querySelector('.navbar, header, nav');
+    const navbarEl = document.querySelector('.navbar, nav, header');
     const navbarHeight = navbarEl ? navbarEl.offsetHeight : 0;
-    const elementTop = destination.getBoundingClientRect().top + window.pageYOffset;
-    const offsetPosition = elementTop - navbarHeight;
+    const targetTop =
+      targetEl.getBoundingClientRect().top + window.pageYOffset - navbarHeight;
 
     window.scrollTo({
-      top: offsetPosition,
-      behavior: 'smooth'
+      top: targetTop,
+      behavior: 'smooth',
     });
   });
 
-  // ============================================================
-  // 2. NAVBAR SCROLL EFFECT
-  // ============================================================
-  const navbar = document.querySelector('.navbar, header, nav');
+  // ─── 2. Navbar Scroll Effect ──────────────────────────────────────────────────
+  const navbar = document.querySelector('.navbar, nav, header');
 
   if (navbar) {
     const SCROLL_THRESHOLD = 50;
@@ -42,215 +38,160 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    let navbarTicking = false;
-    window.addEventListener('scroll', function () {
-      if (!navbarTicking) {
-        window.requestAnimationFrame(function () {
-          handleNavbarScroll();
-          navbarTicking = false;
-        });
-        navbarTicking = true;
-      }
-    }, { passive: true });
-
+    window.addEventListener('scroll', handleNavbarScroll, { passive: true });
     handleNavbarScroll();
   }
 
-  // ============================================================
-  // 3. CONTACT FORM VALIDATION
-  // ============================================================
+  // ─── 3. Contact Form Validation ───────────────────────────────────────────────
   const contactForm = document.querySelector('.contact-form');
 
   if (contactForm) {
     const VALIDATORS = {
       required: function (value) {
-        return value.trim().length > 0;
+        return value.trim() !== '';
       },
       email: function (value) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
       },
-      minLength: function (value, length) {
-        return value.trim().length >= length;
+      tel: function (value) {
+        return value.trim() === '' || /^[\d\s\+\-\(\)]{7,20}$/.test(value.trim());
       },
-      phone: function (value) {
-        return /^[\d\s\+\-\(\)]{7,20}$/.test(value.trim());
-      }
+      minlength: function (value, param) {
+        return value.trim().length >= parseInt(param, 10);
+      },
     };
 
-    const ERROR_MESSAGES = {
-      required: 'This field is required.',
-      email: 'Please enter a valid email address.',
-      minLength: 'This field is too short.',
-      phone: 'Please enter a valid phone number.',
-      default: 'Please check this field.'
-    };
+    function getErrorMessage(field, rule, param) {
+      const label =
+        field.labels && field.labels[0]
+          ? field.labels[0].textContent.trim()
+          : field.getAttribute('placeholder') || field.name || 'This field';
 
-    function getOrCreateErrorEl(field) {
-      const fieldWrapper = field.closest('.form-group, .field-wrapper, div') || field.parentNode;
-      let errorEl = fieldWrapper.querySelector('.form-error-message');
-      if (!errorEl) {
-        errorEl = document.createElement('span');
-        errorEl.className = 'form-error-message';
-        errorEl.setAttribute('aria-live', 'polite');
-        errorEl.setAttribute('role', 'alert');
-        field.parentNode.insertBefore(errorEl, field.nextSibling);
-      }
-      return errorEl;
-    }
+      const messages = {
+        required: label + ' is required.',
+        email: 'Please enter a valid email address.',
+        tel: 'Please enter a valid phone number.',
+        minlength: label + ' must be at least ' + param + ' characters.',
+      };
 
-    function showError(field, message) {
-      field.classList.add('field-error');
-      field.classList.remove('field-success');
-      field.setAttribute('aria-invalid', 'true');
-      const errorEl = getOrCreateErrorEl(field);
-      errorEl.textContent = message;
-      errorEl.style.display = 'block';
+      return messages[rule] || label + ' is invalid.';
     }
 
     function clearError(field) {
-      field.classList.remove('field-error');
-      field.classList.add('field-success');
-      field.setAttribute('aria-invalid', 'false');
-      const fieldWrapper = field.closest('.form-group, .field-wrapper, div') || field.parentNode;
-      const errorEl = fieldWrapper.querySelector('.form-error-message');
-      if (errorEl) {
-        errorEl.textContent = '';
-        errorEl.style.display = 'none';
-      }
+      field.classList.remove('input-error');
+      const existingError = field.parentElement.querySelector('.form-error-msg');
+      if (existingError) existingError.remove();
+    }
+
+    function showError(field, message) {
+      field.classList.add('input-error');
+      const errorEl = document.createElement('span');
+      errorEl.className = 'form-error-msg';
+      errorEl.setAttribute('role', 'alert');
+      errorEl.textContent = message;
+      field.parentElement.appendChild(errorEl);
     }
 
     function validateField(field) {
-      const value = field.value;
-      const type = field.type ? field.type.toLowerCase() : 'text';
-      const isRequired = field.hasAttribute('required');
-      const isEmpty = value.trim().length === 0;
-
-      if (isRequired && isEmpty) {
-        showError(field, ERROR_MESSAGES.required);
-        return false;
-      }
-
-      if (!isRequired && isEmpty) {
-        clearError(field);
-        return true;
-      }
-
-      if (type === 'email' || field.name === 'email') {
-        if (!VALIDATORS.email(value)) {
-          showError(field, ERROR_MESSAGES.email);
-          return false;
-        }
-      }
-
-      if (type === 'tel' || field.name === 'phone' || field.name === 'tel') {
-        if (!VALIDATORS.phone(value)) {
-          showError(field, ERROR_MESSAGES.phone);
-          return false;
-        }
-      }
-
-      const minLength = field.getAttribute('minlength');
-      if (minLength && !VALIDATORS.minLength(value, parseInt(minLength, 10))) {
-        showError(field, ERROR_MESSAGES.minLength);
-        return false;
-      }
-
       clearError(field);
+
+      const isRequired = field.hasAttribute('required');
+      const fieldType = field.type || field.tagName.toLowerCase();
+      const value = field.value;
+
+      if (isRequired && !VALIDATORS.required(value)) {
+        showError(field, getErrorMessage(field, 'required'));
+        return false;
+      }
+
+      if (value.trim() !== '') {
+        if (fieldType === 'email' && !VALIDATORS.email(value)) {
+          showError(field, getErrorMessage(field, 'email'));
+          return false;
+        }
+
+        if (fieldType === 'tel' && !VALIDATORS.tel(value)) {
+          showError(field, getErrorMessage(field, 'tel'));
+          return false;
+        }
+
+        const minLength = field.getAttribute('minlength');
+        if (minLength && !VALIDATORS.minlength(value, minLength)) {
+          showError(field, getErrorMessage(field, 'minlength', minLength));
+          return false;
+        }
+      }
+
       return true;
     }
 
+    function getFormFields() {
+      return Array.from(
+        contactForm.querySelectorAll('input, textarea, select')
+      ).filter(function (field) {
+        return field.type !== 'submit' && field.type !== 'button' && field.type !== 'hidden';
+      });
+    }
+
     contactForm.addEventListener('blur', function (e) {
-      const field = e.target;
-      if (
-        field.tagName === 'INPUT' ||
-        field.tagName === 'TEXTAREA' ||
-        field.tagName === 'SELECT'
-      ) {
-        validateField(field);
-      }
+      const field = e.target.closest('input, textarea, select');
+      if (!field || field.type === 'submit' || field.type === 'button') return;
+      validateField(field);
     }, true);
 
     contactForm.addEventListener('input', function (e) {
-      const field = e.target;
-      if (
-        (field.tagName === 'INPUT' ||
-          field.tagName === 'TEXTAREA' ||
-          field.tagName === 'SELECT') &&
-        field.classList.contains('field-error')
-      ) {
+      const field = e.target.closest('input, textarea, select');
+      if (!field) return;
+      if (field.classList.contains('input-error')) {
         validateField(field);
       }
     });
 
     contactForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      const fields = contactForm.querySelectorAll('input, textarea, select');
+      const fields = getFormFields();
       let isFormValid = true;
-      let firstInvalidField = null;
 
       fields.forEach(function (field) {
-        if (field.type === 'submit' || field.type === 'button' || field.type === 'reset') return;
-        const isValid = validateField(field);
-        if (!isValid && !firstInvalidField) {
-          firstInvalidField = field;
-          isFormValid = false;
-        } else if (!isValid) {
-          isFormValid = false;
-        }
+        const fieldValid = validateField(field);
+        if (!fieldValid) isFormValid = false;
       });
 
-      if (!isFormValid && firstInvalidField) {
-        firstInvalidField.focus();
-        return;
-      }
+      if (!isFormValid) {
+        e.preventDefault();
 
-      if (isFormValid) {
-        const submitBtn = contactForm.querySelector('[type="submit"]');
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          const originalText = submitBtn.textContent;
-          submitBtn.textContent = 'Sending...';
+        const firstError = contactForm.querySelector('.input-error');
+        if (firstError) {
+          const navbarEl = document.querySelector('.navbar, nav, header');
+          const navbarHeight = navbarEl ? navbarEl.offsetHeight : 0;
+          const fieldTop =
+            firstError.getBoundingClientRect().top + window.pageYOffset - navbarHeight - 20;
 
-          setTimeout(function () {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-          }, 3000);
+          window.scrollTo({ top: fieldTop, behavior: 'smooth' });
+          firstError.focus();
         }
-
-        contactForm.dispatchEvent(new CustomEvent('formValidated', {
-          bubbles: true,
-          detail: { form: contactForm }
-        }));
       }
     });
   }
 
-  // ============================================================
-  // 4. SCROLL ANIMATIONS (FADE-IN ON SCROLL)
-  // ============================================================
-  const ANIMATION_CLASSES = [
-    '.fade-in',
-    '.fade-up',
-    '.fade-down',
-    '.fade-left',
-    '.fade-right',
-    '.slide-in',
-    '.animate-on-scroll',
-    '[data-animate]'
-  ];
+  // ─── 4. Scroll Animations (Fade-in on Scroll) ─────────────────────────────────
+  const ANIMATION_CLASS = 'fade-in-visible';
+  const OBSERVE_SELECTOR = '.fade-in, .animate-on-scroll, [data-animate]';
+  const THRESHOLD = 0.15;
+  const ROOT_MARGIN = '0px 0px -60px 0px';
 
-  const animatableElements = document.querySelectorAll(ANIMATION_CLASSES.join(', '));
+  function applyScrollAnimations() {
+    const animatableEls = document.querySelectorAll(OBSERVE_SELECTOR);
+    if (!animatableEls.length) return;
 
-  if (animatableElements.length > 0) {
-    const INTERSECTION_OPTIONS = {
-      root: null,
-      rootMargin: '0px 0px -60px 0px',
-      threshold: 0.1
-    };
+    if (!('IntersectionObserver' in window)) {
+      animatableEls.forEach(function (el) {
+        el.classList.add(ANIMATION_CLASS);
+      });
+      return;
+    }
 
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(function (entries) {
+    const observer = new IntersectionObserver(
+      function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
             const el = entry.target;
@@ -258,34 +199,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (delay) {
               setTimeout(function () {
-                el.classList.add('animated', 'is-visible');
+                el.classList.add(ANIMATION_CLASS);
               }, parseInt(delay, 10));
             } else {
-              el.classList.add('animated', 'is-visible');
+              el.classList.add(ANIMATION_CLASS);
             }
 
             observer.unobserve(el);
           }
         });
-      }, INTERSECTION_OPTIONS);
+      },
+      {
+        threshold: THRESHOLD,
+        rootMargin: ROOT_MARGIN,
+      }
+    );
 
-      animatableElements.forEach(function (el) {
-        el.classList.add('animation-ready');
-        observer.observe(el);
-      });
-
-    } else {
-      animatableElements.forEach(function (el) {
-        el.classList.add('animated', 'is-visible');
-      });
-    }
+    animatableEls.forEach(function (el) {
+      observer.observe(el);
+    });
   }
 
-});
-/* === NAVBAR SCROLL JS OVERRIDE START === */
-(function(){var nb=document.querySelector('nav.navbar,.navbar:not(.zappy-catalog-menu)');var cm=document.querySelector('.zappy-catalog-menu,#zappy-catalog-menu');if(!nb)return;var bodyBg=getComputedStyle(document.body).backgroundColor||'rgb(0,0,0)';var m=bodyBg.match(/\d+/g);var cr=m?parseInt(m[0]):0,cg=m?parseInt(m[1]):0,cb=m?parseInt(m[2]):0;var fb='rgba('+cr+','+cg+','+cb+',0.85)';var sR=cr/255,sG=cg/255,sB=cb/255;sR=sR<=0.03928?sR/12.92:Math.pow((sR+0.055)/1.055,2.4);sG=sG<=0.03928?sG/12.92:Math.pow((sG+0.055)/1.055,2.4);sB=sB<=0.03928?sB/12.92:Math.pow((sB+0.055)/1.055,2.4);var lum=0.2126*sR+0.7152*sG+0.0722*sB;var rs=getComputedStyle(document.documentElement);var td=rs.getPropertyValue('--text-dark').trim()||'#1a1a1a';var tl=rs.getPropertyValue('--text-light').trim()||'#ffffff';var st=(lum>0.4)?td:tl;var th=60;var neSel='a,.navbar-brand,.navbar-brand a,.dropdown-toggle,.mobile-toggle,.phone-header-btn,.mobile-hamburger-btn,.mobile-close-btn,.mobile-submenu-toggle,.nav-link';var skipCls=['cart-link','login-link','nav-search-toggle','search-toggle','nav-cta-btn'];function sTC(c,clr){var els=c.querySelectorAll(neSel);for(var i=0;i<els.length;i++){var sk=false;if(els[i].closest('.sub-menu')||els[i].closest('.dropdown-menu')){sk=true;}for(var j=0;j<skipCls.length;j++){if(els[i].classList.contains(skipCls[j])){sk=true;break;}}if(!sk)els[i].style.setProperty('color',clr,'important');}}function cTC(c){var els=c.querySelectorAll(neSel);for(var i=0;i<els.length;i++){if(els[i].closest('.sub-menu')||els[i].closest('.dropdown-menu'))continue;els[i].style.removeProperty('color');}}function onS(){if(window._zappyNavOverrideActive)return;if(window._zappyNavNoDarkHero)return;if(window.innerWidth<=768){nb.style.removeProperty('background');nb.style.removeProperty('background-color');nb.style.removeProperty('background-image');nb.style.removeProperty('--frosted-text');nb.style.backdropFilter='';nb.style.webkitBackdropFilter='';nb.style.boxShadow='';nb.classList.remove('scrolled');cTC(nb);if(cm){cm.style.removeProperty('background');cm.style.removeProperty('background-color');cm.style.removeProperty('backdrop-filter');cm.style.removeProperty('-webkit-backdrop-filter');cm.classList.remove('scrolled');cTC(cm);}return;}var y=window.scrollY||window.pageYOffset;if(y>th){nb.classList.add('scrolled');nb.style.setProperty('background-color',fb,'important');nb.style.setProperty('background-image','none','important');nb.style.setProperty('--frosted-text',st);nb.style.backdropFilter='blur(12px)';nb.style.webkitBackdropFilter='blur(12px)';nb.style.boxShadow='0 2px 16px rgba(0,0,0,0.12)';sTC(nb,st);if(cm){cm.classList.add('scrolled');cm.style.setProperty('background',fb,'important');cm.style.setProperty('backdrop-filter','blur(12px)','important');cm.style.setProperty('-webkit-backdrop-filter','blur(12px)','important');sTC(cm,st);}}else{if(window._zappyNavNoDarkHero)return;nb.classList.remove('scrolled');nb.style.setProperty('background-color','transparent','important');nb.style.removeProperty('background-image');nb.style.removeProperty('--frosted-text');nb.style.backdropFilter='none';nb.style.webkitBackdropFilter='none';nb.style.boxShadow='none';cTC(nb);if(cm){cm.classList.remove('scrolled');cm.style.setProperty('background','transparent','important');cm.style.setProperty('backdrop-filter','none','important');cm.style.setProperty('-webkit-backdrop-filter','none','important');cTC(cm);}}}if(window._zappyNavScrollCleanup)window._zappyNavScrollCleanup();window.addEventListener('scroll',onS,{passive:true});window.addEventListener('resize',onS,{passive:true});window._zappyNavScrollCleanup=function(){window.removeEventListener('scroll',onS);window.removeEventListener('resize',onS);};onS();function sLum(rv,gv,bv){rv/=255;gv/=255;bv/=255;rv=rv<=0.03928?rv/12.92:Math.pow((rv+0.055)/1.055,2.4);gv=gv<=0.03928?gv/12.92:Math.pow((gv+0.055)/1.055,2.4);bv=bv<=0.03928?bv/12.92:Math.pow((bv+0.055)/1.055,2.4);return 0.2126*rv+0.7152*gv+0.0722*bv;}var heroEl=document.querySelector('section[class*="hero"],[data-hero-type],main>section:first-child');var hasDH=false;if(heroEl){var hCs=getComputedStyle(heroEl);var hBI=hCs.backgroundImage;if(hBI&&hBI!=='none'){if(hBI.indexOf('url(')!==-1){var hM2=hCs.backgroundColor.match(/\d+/g);if(hM2&&hM2.length>=3){hasDH=sLum(parseInt(hM2[0]),parseInt(hM2[1]),parseInt(hM2[2]))<0.4;}else{hasDH=true;}}else if(hBI.indexOf('gradient')!==-1){var cM=hBI.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/g);if(cM&&cM.length>0){var tLm=0;for(var ci=0;ci<cM.length;ci++){var pts=cM[ci].match(/\d+/g);tLm+=sLum(parseInt(pts[0]),parseInt(pts[1]),parseInt(pts[2]));}hasDH=(tLm/cM.length)<0.4;}else{hasDH=true;}}else{hasDH=true;}}else{var hM=hCs.backgroundColor.match(/\d+/g);if(hM&&hM.length>=3){hasDH=sLum(parseInt(hM[0]),parseInt(hM[1]),parseInt(hM[2]))<0.4;}}}if(!hasDH){window.removeEventListener('scroll',onS);window.removeEventListener('resize',onS);delete window._zappyNavScrollCleanup;nb.classList.add('scrolled');if(window.innerWidth>768){nb.style.setProperty('--frosted-text',st);nb.style.setProperty('background-image','none','important');nb.style.setProperty('background-color',fb,'important');nb.style.backdropFilter='blur(12px)';nb.style.webkitBackdropFilter='blur(12px)';nb.style.boxShadow='0 2px 16px rgba(0,0,0,0.12)';sTC(nb,st);}if(cm){cm.classList.add('scrolled');if(window.innerWidth>768){cm.style.setProperty('background',fb,'important');cm.style.setProperty('backdrop-filter','blur(12px)','important');cm.style.setProperty('-webkit-backdrop-filter','blur(12px)','important');sTC(cm,st);}}window._zappyNavNoDarkHero=true;var origNbR=nb.classList.remove.bind(nb.classList);nb._origClassListRemove=origNbR;nb.classList.remove=function(){var a=[];for(var i=0;i<arguments.length;i++){if(arguments[i]!=='scrolled')a.push(arguments[i]);}if(a.length>0)origNbR.apply(null,a);};if(cm){var origCmR=cm.classList.remove.bind(cm.classList);cm._origClassListRemove=origCmR;cm.classList.remove=function(){var a=[];for(var i=0;i<arguments.length;i++){if(arguments[i]!=='scrolled')a.push(arguments[i]);}if(a.length>0)origCmR.apply(null,a);};}}})();
-/* === NAVBAR SCROLL JS OVERRIDE END === */
+  applyScrollAnimations();
 
+});
 ;
 /* ==ZAPPY E-COMMERCE JS START== */
 // E-commerce functionality
